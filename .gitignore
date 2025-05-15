@@ -1,0 +1,19 @@
+# Build
+build/
+*.o
+*.obj
+*.ilk
+*.log
+*.exe
+engine
+engine.exe
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Vulkan
+*.spv
+
+# SCons
+.sconsign.dblite
