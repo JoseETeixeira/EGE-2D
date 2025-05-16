@@ -1,39 +1,59 @@
-# EGE-2D
+# EGE-2D Engine
 
-Vulkan-based 2D Game Engine.
+A 2D game engine built with C++ using Vulkan for rendering and ImGui for the UI.
 
-## Prerequisites
+## Node System
 
-- Vulkan SDK (https://vulkan.lunarg.com/)
-- SCons (https://scons.org)
-- GLFW (https://www.glfw.org/)
+The engine uses a node-based architecture similar to Godot, with different node types:
 
-Linux:
+- **Node**: Base class for all nodes
+- **Node2D**: Base class for all 2D nodes with transform capabilities
+- **Sprite**: 2D sprite node for displaying images
+- **CharacterBody2D**: Physics-based character controller
+- **Camera**: Camera node for controlling the view
+- **Light**: Light node for 2D lighting
+- **Label**: UI text label
+- **Button**: UI button
+- **Panel**: UI panel container
 
-```
-sudo apt install scons libglfw3-dev pkg-config
-# Download and install Vulkan SDK, set VULKAN_SDK env var
-export VULKAN_SDK=/opt/vulkan-sdk-1.4.313.0
-source $VULKAN_SDK/setup-env.sh
-source ~/.bashrc  # or ~/.zshrc
+Each node type has its own folder and files in the `nodes` directory, making it easy to extend the engine with new node types.
 
-```
+## Documentation System
 
-Windows:
+The engine includes a built-in documentation system that auto-generates documentation for node methods. The documentation can be accessed in two ways:
 
-```
-# Install SCons (pip install scons)
-# Install GLFW binaries and Vulkan SDK, set VULKAN_SDK env var
-```
+1. Press **F1** to open the documentation popup
+2. Go to **Help -> Documentation** in the top menu
 
-## Building
+### Documentation Features
 
-```
+- **Auto-generated documentation** from node class definitions
+- **Search functionality** to quickly find methods and properties
+- **Organized by node type** for easy navigation
+- **Examples** for each method to help understand usage
+
+### Documentation Structure
+
+Each node method's documentation includes:
+
+- Method name and signature
+- Description
+- Parameters with descriptions
+- Return value description
+- Usage examples
+
+## Building the Engine
+
+The engine uses SCons as its build system. To build the engine:
+
+```bash
 scons
 ```
 
-## Running
+## Running the Engine
 
-```
-./engine  # or engine.exe on Windows
+After building, run the engine with:
+
+```bash
+./engine
 ```

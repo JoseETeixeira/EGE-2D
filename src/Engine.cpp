@@ -48,6 +48,9 @@ bool Engine::Init()
                                    {
         auto engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(w));
         engine->framebufferResized.store(true); });
+
+    // Set keyboard callback
+    glfwSetKeyCallback(window, KeyCallback);
     if (!window)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -724,4 +727,15 @@ void Engine::RecreateSwapChain()
     CreateCommandBuffers();
     // Update ImGui with new image count
     ImGui_ImplVulkan_SetMinImageCount(static_cast<uint32_t>(swapChainImages.size()));
+}
+
+void Engine::KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods)
+{
+    // Get the engine instance from the window user pointer
+    auto engine = reinterpret_cast<Engine *>(glfwGetWindowUserPointer(window));
+    if (!engine)
+        return;
+
+    // Forward the key event to the UI for documentation handling
+    engine->ui.HandleDocumentationKeyPress(key, scancode, action, mods);
 }

@@ -34,7 +34,11 @@ else:
     print("Unsupported platform:", sys.platform)
     Exit(1)
 
+# Add nodes directory to include path
+env.Append(CPPPATH=['nodes'])
+
 sources = Glob('src/*.cpp')
+sources += Glob('nodes/*/*.cpp')  # Include all node implementation files
 sources += Glob('vendor/imgui/*.cpp')
 sources += ['vendor/imgui/backends/imgui_impl_vulkan.cpp', 'vendor/imgui/backends/imgui_impl_glfw.cpp']
 program = env.Program('engine', sources)

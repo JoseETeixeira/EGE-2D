@@ -3,18 +3,9 @@
 #include <filesystem>
 #include <imgui.h>
 #include <imgui_internal.h>
-#include "Node.h"
-#include "../nodes/Node2D/Node2D.h"
-#include "../nodes/Sprite/Sprite.h"
 
 EngineUI::EngineUI()
 {
-    // Initialize node counters
-    for (int i = 0; i < static_cast<int>(NodeType::Panel) + 1; i++)
-    {
-        nodeCounters[static_cast<NodeType>(i)] = 0;
-    }
-
     InitializeSceneHierarchy();
 }
 
@@ -22,37 +13,30 @@ EngineUI::~EngineUI() {}
 
 void EngineUI::InitializeSceneHierarchy()
 {
-    // Initialize node counters
-    for (int i = 0; i < static_cast<int>(NodeType::Panel) + 1; i++)
-    {
-        nodeCounters[static_cast<NodeType>(i)] = 0;
-    }
-
     // Create root node
-    rootNode = std::make_shared<Node>(GenerateUniqueName(NodeType::Root), NodeType::Root);
+    rootNode = std::make_shared<SceneNode>("Scene", NodeType::Root);
     rootNode->expanded = true;
 
-    // Add some example nodes with unique names
-    auto node2D = std::make_shared<Node2D>(GenerateUniqueName(NodeType::Node2D));
+    // Add some example nodes
+    auto node2D = std::make_shared<SceneNode>("Node2D", NodeType::Node2D);
     rootNode->children.push_back(node2D);
 
-    auto characterBody = std::make_shared<Node>(GenerateUniqueName(NodeType::CharacterBody2D), NodeType::CharacterBody2D);
+    auto characterBody = std::make_shared<SceneNode>("CharacterBody2D", NodeType::CharacterBody2D);
     node2D->children.push_back(characterBody);
 
-    auto sprite = std::make_shared<Sprite>(GenerateUniqueName(NodeType::Sprite));
+    auto sprite = std::make_shared<SceneNode>("Sprite", NodeType::Sprite);
     characterBody->children.push_back(sprite);
 
-    auto camera = std::make_shared<Node>(GenerateUniqueName(NodeType::Camera), NodeType::Camera);
+    auto camera = std::make_shared<SceneNode>("Camera2D", NodeType::Camera);
     rootNode->children.push_back(camera);
 
-    auto ui = std::make_shared<Node2D>("UI", NodeType::Node2D);
-    nodeCounters[NodeType::Node2D]++; // Manually increment for this custom-named node
+    auto ui = std::make_shared<SceneNode>("UI", NodeType::Node2D);
     rootNode->children.push_back(ui);
 
-    auto label = std::make_shared<Node>(GenerateUniqueName(NodeType::Label), NodeType::Label);
+    auto label = std::make_shared<SceneNode>("Label", NodeType::Label);
     ui->children.push_back(label);
 
-    auto button = std::make_shared<Node>(GenerateUniqueName(NodeType::Button), NodeType::Button);
+    auto button = std::make_shared<SceneNode>("Button", NodeType::Button);
     ui->children.push_back(button);
 }
 
@@ -66,16 +50,7 @@ bool EngineUI::Init()
     }
 
     SetupTheme();
-
-    // Initialize documentation manager
-    docManager.Init();
-
     return true;
-}
-
-void EngineUI::HandleDocumentationKeyPress(int key, int scancode, int action, int mods)
-{
-    docManager.HandleKeyPress(key, scancode, action, mods);
 }
 
 bool EngineUI::LoadFonts()
@@ -123,16 +98,16 @@ bool EngineUI::LoadFonts()
 
 void EngineUI::SetupIcons()
 {
-    // Map node types to Font Awesome 5 icons with more appropriate choices
+    // Map node types to Font Awesome icons
     // These are Unicode values for Font Awesome 5 icons
     nodeIcons[NodeType::Root] = "\xef\x81\x80";            // fa-sitemap
-    nodeIcons[NodeType::Node2D] = "\xef\x81\x88";          // fa-square-o (empty square representing a 2D node)
+    nodeIcons[NodeType::Node2D] = "\xef\x87\xb8";          // fa-object-group
     nodeIcons[NodeType::Sprite] = "\xef\x83\x87";          // fa-image
     nodeIcons[NodeType::CharacterBody2D] = "\xef\x86\x8e"; // fa-user
     nodeIcons[NodeType::Camera] = "\xef\x80\xbd";          // fa-camera
     nodeIcons[NodeType::Light] = "\xef\x83\x85";           // fa-lightbulb
     nodeIcons[NodeType::Label] = "\xef\x81\x9e";           // fa-font
-    nodeIcons[NodeType::Button] = "\xef\x81\x95";          // fa-hand-pointer-o
+    nodeIcons[NodeType::Button] = "\xef\x89\x96";          // fa-square
     nodeIcons[NodeType::Panel] = "\xef\x84\xa6";           // fa-window-maximize
 }
 
@@ -289,9 +264,6 @@ void EngineUI::Render()
         ImGui::ShowDemoWindow(&showDemoWindow);
     }
 
-    // Render documentation if visible
-    docManager.Render();
-
     ImGui::PopFont();
 }
 
@@ -359,9 +331,8 @@ void EngineUI::RenderTopBar()
 
         if (ImGui::BeginMenu("Help"))
         {
-            if (ImGui::MenuItem("Documentation", "F1"))
+            if (ImGui::MenuItem("Documentation"))
             {
-                docManager.ShowDocumentation();
             }
             if (ImGui::MenuItem("About"))
             {
@@ -414,7 +385,7 @@ void EngineUI::RenderScenePanel()
     }
 }
 
-void EngineUI::RenderSceneNode(std::shared_ptr<Node> node)
+void EngineUI::RenderSceneNode(std::shared_ptr<SceneNode> node)
 {
     if (!node)
         return;
@@ -478,7 +449,7 @@ void EngineUI::RenderSceneNode(std::shared_ptr<Node> node)
     }
 }
 
-void EngineUI::RenderNodeContextMenu(std::shared_ptr<Node> node)
+void EngineUI::RenderNodeContextMenu(std::shared_ptr<SceneNode> node)
 {
     if (ImGui::MenuItem("Add Child Node"))
     {
@@ -515,81 +486,13 @@ void EngineUI::RenderNodeContextMenu(std::shared_ptr<Node> node)
     }
 }
 
-// Generate a unique name for a node based on its type
-std::string EngineUI::GenerateUniqueName(NodeType type)
-{
-    // Increment the counter for this node type
-    nodeCounters[type]++;
-
-    // Base name for each node type
-    std::string baseName;
-    switch (type)
-    {
-    case NodeType::Root:
-        baseName = "Scene";
-        break;
-    case NodeType::Node2D:
-        baseName = "Node2D";
-        break;
-    case NodeType::Sprite:
-        baseName = "Sprite";
-        break;
-    case NodeType::CharacterBody2D:
-        baseName = "CharacterBody2D";
-        break;
-    case NodeType::Camera:
-        baseName = "Camera2D";
-        break;
-    case NodeType::Light:
-        baseName = "Light2D";
-        break;
-    case NodeType::Label:
-        baseName = "Label";
-        break;
-    case NodeType::Button:
-        baseName = "Button";
-        break;
-    case NodeType::Panel:
-        baseName = "Panel";
-        break;
-    default:
-        baseName = "Node";
-        break;
-    }
-
-    // For the first node of a type, don't add a number
-    if (nodeCounters[type] == 1)
-    {
-        return baseName;
-    }
-
-    // For subsequent nodes, add the counter number
-    return baseName + std::to_string(nodeCounters[type]);
-}
-
-void EngineUI::AddChildNode(std::shared_ptr<Node> parent, const std::string &name, NodeType type)
+void EngineUI::AddChildNode(std::shared_ptr<SceneNode> parent, const std::string &name, NodeType type)
 {
     if (!parent)
         return;
 
-    // Generate a unique name for the node
-    std::string uniqueName = GenerateUniqueName(type);
-
-    // Create a new node with the unique name based on type
-    std::shared_ptr<Node> newNode;
-
-    switch (type)
-    {
-    case NodeType::Node2D:
-        newNode = std::make_shared<Node2D>(uniqueName);
-        break;
-    case NodeType::Sprite:
-        newNode = std::make_shared<Sprite>(uniqueName);
-        break;
-    default:
-        newNode = std::make_shared<Node>(uniqueName, type);
-        break;
-    }
+    // Create a new node
+    auto newNode = std::make_shared<SceneNode>(name, type);
 
     // Add it to the parent's children
     parent->children.push_back(newNode);
@@ -831,26 +734,27 @@ void EngineUI::RenderInspectorPanel()
     ImGui::PopFont();
 
     // Position
+    static float position[3] = {0.0f, 0.0f, 0.0f};
     ImGui::Text("Position");
     ImGui::SameLine(100);
     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputFloat3("##Position", selectedNode->transform.position);
+    ImGui::InputFloat3("##Position", position);
     ImGui::PopItemWidth();
 
     // Rotation
+    static float rotation[3] = {0.0f, 0.0f, 0.0f};
     ImGui::Text("Rotation");
     ImGui::SameLine(100);
     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputFloat3("##Rotation", selectedNode->transform.rotation);
+    ImGui::InputFloat3("##Rotation", rotation);
     ImGui::PopItemWidth();
 
     // Scale
-    ImGui::Text("Scale");
-    ImGui::SameLine(100);
+    static float scale[3] = {1.0f, 1.0f, 1.0f};
     ImGui::Text("Scale");
     ImGui::SameLine(100);
     ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputFloat3("##Scale", selectedNode->transform.scale);
+    ImGui::InputFloat3("##Scale", scale);
     ImGui::PopItemWidth();
 
     ImGui::Separator();

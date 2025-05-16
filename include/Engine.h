@@ -17,6 +17,9 @@ public:
     bool Init();
     void Run();
 
+    // Keyboard callback
+    static void KeyCallback(GLFWwindow *window, int key, int scancode, int action, int mods);
+
 private:
     // Thread functions
     void MainLoop();
