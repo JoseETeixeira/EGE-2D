@@ -267,12 +267,56 @@ void EngineUI::RenderEditorPanel()
 {
     ImGui::PushFont(titleFont);
     ImGui::Text("Editor");
+    ImGui::SameLine(ImGui::GetContentRegionAvail().x - 100);
+    RenderModeToggle();
     ImGui::PopFont();
     ImGui::Separator();
 
+    // Render the appropriate editor based on the current mode
+    if (is3DMode)
+    {
+        Render3DEditor();
+    }
+    else
+    {
+        Render2DEditor();
+    }
+}
+
+void EngineUI::RenderModeToggle()
+{
+    // Create a toggle button for 2D/3D mode
+    ImGui::PushStyleColor(ImGuiCol_Button, is3DMode ? ImVec4(0.2f, 0.4f, 0.8f, 0.8f) : ImVec4(0.8f, 0.2f, 0.2f, 0.8f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, is3DMode ? ImVec4(0.3f, 0.5f, 0.9f, 1.0f) : ImVec4(0.9f, 0.3f, 0.3f, 1.0f));
+    ImGui::PushStyleColor(ImGuiCol_ButtonActive, is3DMode ? ImVec4(0.4f, 0.6f, 1.0f, 1.0f) : ImVec4(1.0f, 0.4f, 0.4f, 1.0f));
+
+    if (ImGui::Button(is3DMode ? "3D Mode" : "2D Mode", ImVec2(100, 0)))
+    {
+        ToggleEditorMode();
+    }
+
+    ImGui::PopStyleColor(3);
+
+    // Show tooltip on hover
+    if (ImGui::IsItemHovered())
+    {
+        ImGui::BeginTooltip();
+        ImGui::Text("Click to switch to %s mode", is3DMode ? "2D" : "3D");
+        ImGui::EndTooltip();
+    }
+}
+
+void EngineUI::ToggleEditorMode()
+{
+    is3DMode = !is3DMode;
+    // Additional mode switching logic could be added here
+}
+
+void EngineUI::Render2DEditor()
+{
     // Editor viewport
     ImVec2 viewportSize = ImGui::GetContentRegionAvail();
-    ImGui::Text("Viewport Size: %.0f x %.0f", viewportSize.x, viewportSize.y);
+    ImGui::Text("2D Viewport Size: %.0f x %.0f", viewportSize.x, viewportSize.y);
 
     // Draw a placeholder for the viewport
     ImGui::GetWindowDrawList()->AddRectFilled(
@@ -321,7 +365,97 @@ void EngineUI::RenderEditorPanel()
         IM_COL32(0, 255, 0, 100), 2.0f);
 
     // Make the viewport area interactive
-    ImGui::InvisibleButton("viewport", viewportSize);
+    ImGui::InvisibleButton("viewport2d", viewportSize);
+}
+
+void EngineUI::Render3DEditor()
+{
+    // Editor viewport
+    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+    ImGui::Text("3D Viewport Size: %.0f x %.0f", viewportSize.x, viewportSize.y);
+
+    // Draw a placeholder for the viewport
+    ImGui::GetWindowDrawList()->AddRectFilled(
+        ImGui::GetCursorScreenPos(),
+        ImVec2(ImGui::GetCursorScreenPos().x + viewportSize.x, ImGui::GetCursorScreenPos().y + viewportSize.y),
+        IM_COL32(30, 30, 40, 255));
+
+    // Draw a 3D grid in the viewport
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    ImVec2 startPos = ImGui::GetCursorScreenPos();
+
+    // Grid settings
+    float gridSize = 30.0f;
+    ImU32 gridColor = IM_COL32(80, 80, 100, 40);
+
+    // Center of the viewport
+    float centerX = startPos.x + viewportSize.x / 2;
+    float centerY = startPos.y + viewportSize.y / 2;
+
+    // Draw 3D grid (perspective effect)
+    // Horizontal lines with perspective
+    for (int i = -10; i <= 10; i++)
+    {
+        float y = centerY + i * gridSize;
+        float perspectiveScale = 0.7f + 0.3f * (float)(10 - abs(i)) / 10.0f;
+        float xStart = centerX - (viewportSize.x / 2) * perspectiveScale;
+        float xEnd = centerX + (viewportSize.x / 2) * perspectiveScale;
+
+        drawList->AddLine(
+            ImVec2(xStart, y),
+            ImVec2(xEnd, y),
+            gridColor);
+    }
+
+    // Vertical lines with perspective
+    for (int i = -15; i <= 15; i++)
+    {
+        float x = centerX + i * gridSize;
+        float perspectiveScale = 0.7f + 0.3f * (float)(15 - abs(i)) / 15.0f;
+        float yStart = centerY - (viewportSize.y / 2) * perspectiveScale;
+        float yEnd = centerY + (viewportSize.y / 2) * perspectiveScale;
+
+        drawList->AddLine(
+            ImVec2(x, yStart),
+            ImVec2(x, yEnd),
+            gridColor);
+    }
+
+    // Draw 3D axes
+    // X axis (red)
+    drawList->AddLine(
+        ImVec2(centerX, centerY),
+        ImVec2(centerX + viewportSize.x / 3, centerY),
+        IM_COL32(255, 50, 50, 200), 2.0f);
+
+    // Y axis (green)
+    drawList->AddLine(
+        ImVec2(centerX, centerY),
+        ImVec2(centerX, centerY - viewportSize.y / 3),
+        IM_COL32(50, 255, 50, 200), 2.0f);
+
+    // Z axis (blue) - coming toward the viewer
+    drawList->AddLine(
+        ImVec2(centerX, centerY),
+        ImVec2(centerX - viewportSize.x / 6, centerY + viewportSize.y / 6),
+        IM_COL32(50, 50, 255, 200), 2.0f);
+
+    // Draw axis labels directly with the draw list instead of using ImGui::Text
+    // This avoids issues with cursor positioning
+    ImGui::GetWindowDrawList()->AddText(
+        ImVec2(centerX + viewportSize.x / 3 + 5, centerY),
+        IM_COL32(255, 50, 50, 255), "X");
+
+    ImGui::GetWindowDrawList()->AddText(
+        ImVec2(centerX, centerY - viewportSize.y / 3 - 15),
+        IM_COL32(50, 255, 50, 255), "Y");
+
+    ImGui::GetWindowDrawList()->AddText(
+        ImVec2(centerX - viewportSize.x / 6 - 15, centerY + viewportSize.y / 6 + 5),
+        IM_COL32(50, 50, 255, 255), "Z");
+
+    // Make the viewport area interactive
+    ImGui::InvisibleButton("viewport3d", viewportSize);
 }
 
 void EngineUI::RenderInspectorPanel()

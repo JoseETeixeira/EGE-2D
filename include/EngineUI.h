@@ -34,6 +34,13 @@ private:
     float leftPanelWidth = 250.0f;
     float rightPanelWidth = 300.0f;
     bool showDemoWindow = false;
+    bool is3DMode = false; // Default to 2D mode
+
+    // Mode switching
+    void ToggleEditorMode();
+    void RenderModeToggle();
+    void Render2DEditor();
+    void Render3DEditor();
 
     // Theme colors
     void SetupTheme();
