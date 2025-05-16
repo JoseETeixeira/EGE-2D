@@ -59,6 +59,29 @@ private:
     bool resizingLeftPanel = false;
     bool resizingRightPanel = false;
 
+    // Editor camera state
+    struct EditorCamera2D
+    {
+        float zoom = 1.0f;
+        float posX = 0.0f;
+        float posY = 0.0f;
+        bool isDragging = false;
+        ImVec2 lastMousePos = ImVec2(0, 0);
+    } camera2D;
+
+    struct EditorCamera3D
+    {
+        float zoom = 5.0f;
+        float posX = 0.0f;
+        float posY = 0.0f;
+        float posZ = 0.0f;
+        float rotX = 0.0f;
+        float rotY = 0.0f;
+        bool isDragging = false;
+        bool isRotating = false;
+        ImVec2 lastMousePos = ImVec2(0, 0);
+    } camera3D;
+
     // Gizmo state
     enum class GizmoOperation
     {
@@ -115,6 +138,13 @@ private:
     void RenderModeToggle();
     void Render2DEditor();
     void Render3DEditor();
+
+    // Camera controls
+    void HandleEditorCameraControls(ImVec2 viewportSize, ImVec2 viewportPos);
+    void Handle2DCameraControls(ImVec2 viewportSize, ImVec2 viewportPos);
+    void Handle3DCameraControls(ImVec2 viewportSize, ImVec2 viewportPos);
+    ImVec2 WorldToScreen2D(float worldX, float worldY, ImVec2 viewportSize, ImVec2 viewportPos);
+    ImVec2 ScreenToWorld2D(float screenX, float screenY, ImVec2 viewportSize, ImVec2 viewportPos);
 
     // Theme colors
     void SetupTheme();

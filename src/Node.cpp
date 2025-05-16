@@ -1,58 +1,16 @@
 #include "Node.h"
 #include <algorithm>
 #include <imgui.h>
-
-// Initialize static members
-std::map<std::string, std::vector<MethodDoc>> Node::documentation;
-std::map<std::string, std::string> Node::nodeDescriptions;
+#include "DocumentationManager.h"
 
 Node::Node(const std::string &nodeName, NodeType nodeType) : name(nodeName), type(nodeType)
 {
     // Register base node documentation if not already done
-    if (documentation.find("Node") == documentation.end())
+    static bool documentationInitialized = false;
+    if (!documentationInitialized)
     {
-        // Register node description
-        nodeDescriptions["Node"] = "Base class for all nodes in the scene hierarchy.";
-
-        // Register Update method
-        RegisterMethod("Node", {"Update",
-                                "Updates the node state based on the elapsed time.",
-                                "void",
-                                "None",
-                                {{"deltaTime", "Time elapsed since the last frame in seconds"}},
-                                {"node->Update(deltaTime);"}});
-
-        // Register Render method
-        RegisterMethod("Node", {"Render",
-                                "Renders the node to the screen.",
-                                "void",
-                                "None",
-                                {},
-                                {"node->Render();"}});
-
-        // Register AddChild method
-        RegisterMethod("Node", {"AddChild",
-                                "Adds a child node to this node.",
-                                "void",
-                                "None",
-                                {{"child", "Shared pointer to the child node to add"}},
-                                {"auto childNode = std::make_shared<Node2D>(\"Child\");\nparentNode->AddChild(childNode);"}});
-
-        // Register RemoveChild method
-        RegisterMethod("Node", {"RemoveChild",
-                                "Removes a child node from this node.",
-                                "void",
-                                "None",
-                                {{"child", "Shared pointer to the child node to remove"}},
-                                {"parentNode->RemoveChild(childNode);"}});
-
-        // Register GetTypeName method
-        RegisterMethod("Node", {"GetTypeName",
-                                "Returns the type name of the node.",
-                                "std::string",
-                                "The type name as a string",
-                                {},
-                                {"std::string typeName = node->GetTypeName();"}});
+        documentationInitialized = true;
+        InitializeDocumentation();
     }
 }
 
@@ -141,33 +99,6 @@ void Node::RemoveChild(std::shared_ptr<Node> child)
     }
 }
 
-std::map<std::string, std::vector<MethodDoc>> Node::GetDocumentation()
-{
-    return documentation;
-}
-
-std::string Node::GetNodeDescription()
-{
-    // This needs to be static since it's called without an instance
-    std::string typeName = "Node";
-    auto it = nodeDescriptions.find(typeName);
-    if (it != nodeDescriptions.end())
-    {
-        return it->second;
-    }
-    return "No description available.";
-}
-
-std::string Node::GetNodeDescription(const std::string &nodeType)
-{
-    auto it = nodeDescriptions.find(nodeType);
-    if (it != nodeDescriptions.end())
-    {
-        return it->second;
-    }
-    return "No description available for " + nodeType + ".";
-}
-
 std::string Node::GetTypeName() const
 {
     return "Node";
@@ -175,56 +106,59 @@ std::string Node::GetTypeName() const
 
 void Node::RegisterMethod(const std::string &nodeType, const MethodDoc &methodDoc)
 {
-    documentation[nodeType].push_back(methodDoc);
+    // Use DocumentationManager to register the method
+    auto &nodeDocs = DocumentationManager::GetNodeDocumentation();
+    nodeDocs[nodeType].push_back(methodDoc);
+}
+
+void Node::RegisterNodeDescription(const std::string &nodeType, const std::string &description)
+{
+    // Use DocumentationManager to register the node description
+    DocumentationManager::RegisterNodeDescription(nodeType, description);
 }
 
 void Node::InitializeDocumentation()
 {
-    // This is already done in the constructor, but we provide this method
-    // for consistency with derived classes
-    if (documentation.find("Node") == documentation.end())
-    {
-        // Register node description
-        nodeDescriptions["Node"] = "Base class for all nodes in the scene hierarchy.";
+    // Register node description
+    RegisterNodeDescription("Node", "Base class for all nodes in the scene hierarchy.");
 
-        // Register Update method
-        RegisterMethod("Node", {"Update",
-                                "Updates the node state based on the elapsed time.",
-                                "void",
-                                "None",
-                                {{"deltaTime", "Time elapsed since the last frame in seconds"}},
-                                {"node->Update(deltaTime);"}});
+    // Register Update method
+    RegisterMethod("Node", {"Update",
+                            "Updates the node state based on the elapsed time.",
+                            "void",
+                            "None",
+                            {{"deltaTime", "Time elapsed since the last frame in seconds"}},
+                            {"node->Update(deltaTime);"}});
 
-        // Register Render method
-        RegisterMethod("Node", {"Render",
-                                "Renders the node to the screen.",
-                                "void",
-                                "None",
-                                {},
-                                {"node->Render();"}});
+    // Register Render method
+    RegisterMethod("Node", {"Render",
+                            "Renders the node to the screen.",
+                            "void",
+                            "None",
+                            {},
+                            {"node->Render();"}});
 
-        // Register AddChild method
-        RegisterMethod("Node", {"AddChild",
-                                "Adds a child node to this node.",
-                                "void",
-                                "None",
-                                {{"child", "Shared pointer to the child node to add"}},
-                                {"auto childNode = std::make_shared<Node2D>(\"Child\");\nparentNode->AddChild(childNode);"}});
+    // Register AddChild method
+    RegisterMethod("Node", {"AddChild",
+                            "Adds a child node to this node.",
+                            "void",
+                            "None",
+                            {{"child", "Shared pointer to the child node to add"}},
+                            {"auto childNode = std::make_shared<Node2D>(\"Child\");\nparentNode->AddChild(childNode);"}});
 
-        // Register RemoveChild method
-        RegisterMethod("Node", {"RemoveChild",
-                                "Removes a child node from this node.",
-                                "void",
-                                "None",
-                                {{"child", "Shared pointer to the child node to remove"}},
-                                {"parentNode->RemoveChild(childNode);"}});
+    // Register RemoveChild method
+    RegisterMethod("Node", {"RemoveChild",
+                            "Removes a child node from this node.",
+                            "void",
+                            "None",
+                            {{"child", "Shared pointer to the child node to remove"}},
+                            {"parentNode->RemoveChild(childNode);"}});
 
-        // Register GetTypeName method
-        RegisterMethod("Node", {"GetTypeName",
-                                "Returns the type name of the node.",
-                                "std::string",
-                                "The type name as a string",
-                                {},
-                                {"std::string typeName = node->GetTypeName();"}});
-    }
+    // Register GetTypeName method
+    RegisterMethod("Node", {"GetTypeName",
+                            "Returns the type name of the node.",
+                            "std::string",
+                            "The type name as a string",
+                            {},
+                            {"std::string typeName = node->GetTypeName();"}});
 }

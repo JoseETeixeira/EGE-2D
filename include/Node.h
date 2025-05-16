@@ -74,9 +74,6 @@ public:
     void RemoveChild(std::shared_ptr<Node> child);
 
     // Documentation methods
-    static std::map<std::string, std::vector<MethodDoc>> GetDocumentation();
-    static std::string GetNodeDescription();
-    static std::string GetNodeDescription(const std::string &nodeType);
     static void InitializeDocumentation();
 
     // Type information
@@ -85,6 +82,5 @@ public:
 protected:
     // Documentation registration
     static void RegisterMethod(const std::string &nodeType, const MethodDoc &methodDoc);
-    static std::map<std::string, std::vector<MethodDoc>> documentation;
-    static std::map<std::string, std::string> nodeDescriptions;
+    static void RegisterNodeDescription(const std::string &nodeType, const std::string &description);
 };

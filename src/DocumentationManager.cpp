@@ -1,10 +1,15 @@
 #include "DocumentationManager.h"
 #include "imgui.h"
 #include "Node.h"
-#include "../nodes/Node2D/Node2D.h"
-#include "../nodes/Sprite/Sprite.h"
 #include <algorithm>
 #include <cctype>
+#include "../nodes/Camera/Camera.h"
+#include "../nodes/Camera2D/Camera2D.h"
+#include "../nodes/Camera3D/Camera3D.h"
+
+// Initialize static members
+std::map<std::string, std::vector<MethodDoc>> DocumentationManager::nodeDocumentation;
+std::map<std::string, std::string> DocumentationManager::nodeDescriptions;
 
 DocumentationManager::DocumentationManager()
 {
@@ -56,21 +61,42 @@ bool DocumentationManager::HandleKeyPress(int key, int scancode, int action, int
     return false;
 }
 
+void DocumentationManager::RegisterNodeDocumentation(const std::string &nodeType, const std::vector<MethodDoc> &methods)
+{
+    // Add or replace the documentation for this node type
+    nodeDocumentation[nodeType] = methods;
+}
+
+void DocumentationManager::RegisterNodeDescription(const std::string &nodeType, const std::string &description)
+{
+    // Add or replace the description for this node type
+    nodeDescriptions[nodeType] = description;
+}
+
+std::map<std::string, std::vector<MethodDoc>> &DocumentationManager::GetNodeDocumentation()
+{
+    return nodeDocumentation;
+}
+
+std::map<std::string, std::string> &DocumentationManager::GetNodeDescriptions()
+{
+    return nodeDescriptions;
+}
+
 void DocumentationManager::LoadDocumentation()
 {
-    // No need to initialize Node documentation as it's done in the constructor
-    // Just initialize derived classes
-    Node2D::InitializeDocumentation();
-    Sprite::InitializeDocumentation();
+    // Explicitly initialize documentation for all node types
+    // This ensures documentation is available even if no instances have been created
 
-    // Load documentation from Node class
-    nodeDocumentation = Node::GetDocumentation();
+    // Base node
+    Node::InitializeDocumentation();
 
-    // Load node descriptions
-    for (const auto &pair : nodeDocumentation)
-    {
-        nodeDescriptions[pair.first] = Node::GetNodeDescription(pair.first);
-    }
+    // Camera nodes
+    Camera::InitializeDocumentation();
+    Camera2D::InitializeDocumentation();
+    Camera3D::InitializeDocumentation();
+
+    // Other node types will register their documentation when they are instantiated
 }
 
 void DocumentationManager::Render()
@@ -96,6 +122,8 @@ void DocumentationManager::Render()
         ImGui::End();
         return;
     }
+
+    // Only render content if the window is still visible
 
     // Only render content if the window is still visible
     if (isVisible)

@@ -759,12 +759,16 @@ void EngineUI::Render2DEditor()
     // Add gizmo controls on top of the editor
     RenderGizmoControls();
 
-    // Grid settings
-    float gridSize = 20.0f;
+    // Grid settings - adjust grid size based on camera zoom
+    float gridSize = 20.0f * camera2D.zoom;
     ImU32 gridColor = IM_COL32(100, 100, 100, 40);
 
+    // Calculate grid offset based on camera position
+    float offsetX = fmodf(camera2D.posX * camera2D.zoom, gridSize);
+    float offsetY = fmodf(camera2D.posY * camera2D.zoom, gridSize);
+
     // Draw horizontal grid lines
-    for (float y = 0; y < viewportSize.y; y += gridSize)
+    for (float y = -offsetY; y < viewportSize.y; y += gridSize)
     {
         drawList->AddLine(
             ImVec2(startPos.x, startPos.y + y),
@@ -773,7 +777,7 @@ void EngineUI::Render2DEditor()
     }
 
     // Draw vertical grid lines
-    for (float x = 0; x < viewportSize.x; x += gridSize)
+    for (float x = -offsetX; x < viewportSize.x; x += gridSize)
     {
         drawList->AddLine(
             ImVec2(startPos.x + x, startPos.y),
@@ -781,9 +785,9 @@ void EngineUI::Render2DEditor()
             gridColor);
     }
 
-    // Draw origin lines (x and y axes)
-    float centerX = startPos.x + viewportSize.x / 2;
-    float centerY = startPos.y + viewportSize.y / 2;
+    // Draw origin lines (x and y axes) - adjusted for camera position
+    float centerX = startPos.x + viewportSize.x / 2 - camera2D.posX * camera2D.zoom;
+    float centerY = startPos.y + viewportSize.y / 2 - camera2D.posY * camera2D.zoom;
 
     drawList->AddLine(
         ImVec2(centerX, startPos.y),
@@ -814,9 +818,30 @@ void EngineUI::Render2DEditor()
     ImGui::InvisibleButton("viewport2d", viewportSize);
 
     // Handle node selection when clicking in the viewport
-    if (ImGui::IsItemClicked())
+    if (ImGui::IsItemClicked() && !ImGui::IsMouseDragging(0) && !ImGui::IsMouseDragging(1) && !ImGui::IsMouseDragging(2))
     {
         HandleNodeSelection(ImGui::GetIO().MousePos);
+    }
+
+    // Handle camera controls (zoom and pan)
+    if (ImGui::IsItemHovered())
+    {
+        ImGuiIO &io = ImGui::GetIO();
+
+        // Zoom with mouse wheel
+        if (io.MouseWheel != 0.0f)
+        {
+            float zoomFactor = 1.0f + io.MouseWheel * 0.1f;
+            camera2D.zoom *= zoomFactor;
+            camera2D.zoom = ImClamp(camera2D.zoom, 0.1f, 10.0f);
+        }
+
+        // Pan with middle mouse button
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+        {
+            camera2D.posX -= io.MouseDelta.x / camera2D.zoom;
+            camera2D.posY -= io.MouseDelta.y / camera2D.zoom;
+        }
     }
 }
 
@@ -839,13 +864,17 @@ void EngineUI::Render3DEditor()
     // Add gizmo controls on top of the editor
     RenderGizmoControls();
 
-    // Grid settings
-    float gridSize = 30.0f;
+    // Grid settings - adjust grid size based on camera zoom
+    float gridSize = 30.0f * camera3D.zoom / 5.0f;
     ImU32 gridColor = IM_COL32(80, 80, 100, 40);
 
     // Center of the viewport
     float centerX = startPos.x + viewportSize.x / 2;
     float centerY = startPos.y + viewportSize.y / 2;
+
+    // Apply camera position offset
+    centerX -= camera3D.posX * camera3D.zoom / 5.0f;
+    centerY -= camera3D.posZ * camera3D.zoom / 5.0f;
 
     // Draw 3D grid (perspective effect)
     // Horizontal lines with perspective
@@ -876,41 +905,102 @@ void EngineUI::Render3DEditor()
             gridColor);
     }
 
-    // Draw 3D axes
+    // Apply camera rotation to axes
+    float cosY = cosf(camera3D.rotY);
+    float sinY = sinf(camera3D.rotY);
+    float cosX = cosf(camera3D.rotX);
+    float sinX = sinf(camera3D.rotX);
+
+    // Calculate axis lengths based on zoom
+    float axisLength = 50.0f / camera3D.zoom * 5.0f;
+
     // X axis (red)
+    float xAxisX = cosY * axisLength;
+    float xAxisZ = -sinY * axisLength;
     drawList->AddLine(
         ImVec2(centerX, centerY),
-        ImVec2(centerX + viewportSize.x / 3, centerY),
+        ImVec2(centerX + xAxisX, centerY + xAxisZ),
         IM_COL32(255, 50, 50, 200), 2.0f);
 
     // Y axis (green)
+    float yAxisY = cosX * axisLength;
+    float yAxisZ = sinX * axisLength;
     drawList->AddLine(
         ImVec2(centerX, centerY),
-        ImVec2(centerX, centerY - viewportSize.y / 3),
+        ImVec2(centerX, centerY - yAxisZ),
         IM_COL32(50, 255, 50, 200), 2.0f);
 
-    // Z axis (blue) - coming toward the viewer
+    // Z axis (blue)
+    float zAxisX = -sinY * axisLength;
+    float zAxisZ = cosY * cosX * axisLength;
     drawList->AddLine(
         ImVec2(centerX, centerY),
-        ImVec2(centerX - viewportSize.x / 6, centerY + viewportSize.y / 6),
+        ImVec2(centerX + zAxisX, centerY + zAxisZ),
         IM_COL32(50, 50, 255, 200), 2.0f);
 
-    // Draw axis labels directly with the draw list instead of using ImGui::Text
-    // This avoids issues with cursor positioning
+    // Draw axis labels
     ImGui::GetWindowDrawList()->AddText(
-        ImVec2(centerX + viewportSize.x / 3 + 5, centerY),
+        ImVec2(centerX + xAxisX + 5, centerY + xAxisZ),
         IM_COL32(255, 50, 50, 255), "X");
 
     ImGui::GetWindowDrawList()->AddText(
-        ImVec2(centerX, centerY - viewportSize.y / 3 - 15),
+        ImVec2(centerX, centerY - yAxisZ - 15),
         IM_COL32(50, 255, 50, 255), "Y");
 
     ImGui::GetWindowDrawList()->AddText(
-        ImVec2(centerX - viewportSize.x / 6 - 15, centerY + viewportSize.y / 6 + 5),
+        ImVec2(centerX + zAxisX - 5, centerY + zAxisZ + 5),
         IM_COL32(50, 50, 255, 255), "Z");
+
+    // Render nodes in the editor with camera transform applied
+    if (rootNode)
+    {
+        for (auto &node : rootNode->children)
+        {
+            RenderNodeInEditor(node, true);
+        }
+    }
 
     // Make the viewport area interactive
     ImGui::InvisibleButton("viewport3d", viewportSize);
+
+    // Handle node selection on click
+    if (ImGui::IsItemClicked() && !ImGui::IsMouseDragging(0) && !ImGui::IsMouseDragging(1) && !ImGui::IsMouseDragging(2))
+    {
+        HandleNodeSelection(ImGui::GetIO().MousePos);
+    }
+
+    // Handle camera controls
+    if (ImGui::IsItemHovered())
+    {
+        ImGuiIO &io = ImGui::GetIO();
+
+        // Zoom with mouse wheel
+        if (io.MouseWheel != 0.0f)
+        {
+            float zoomDelta = io.MouseWheel * 0.5f;
+            camera3D.zoom -= zoomDelta;
+            camera3D.zoom = ImClamp(camera3D.zoom, 1.0f, 20.0f);
+        }
+
+        // Orbit with middle mouse button
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Middle))
+        {
+            camera3D.rotY -= io.MouseDelta.x * 0.01f;
+            camera3D.rotX -= io.MouseDelta.y * 0.01f;
+            camera3D.rotX = ImClamp(camera3D.rotX, -1.5f, 1.5f);
+        }
+
+        // Pan with right mouse button
+        if (ImGui::IsMouseDragging(ImGuiMouseButton_Right))
+        {
+            float panSpeed = 0.05f * camera3D.zoom / 5.0f;
+            float cosY = cosf(camera3D.rotY);
+            float sinY = sinf(camera3D.rotY);
+
+            camera3D.posX += (-cosY * io.MouseDelta.x - sinY * io.MouseDelta.y) * panSpeed;
+            camera3D.posZ += (-sinY * io.MouseDelta.x + cosY * io.MouseDelta.y) * panSpeed;
+        }
+    }
 }
 
 void EngineUI::RenderInspectorPanel()
@@ -1068,13 +1158,49 @@ void EngineUI::RenderNodeInEditor(std::shared_ptr<Node> node, bool is3D,
     float worldX = parentX + node->transform.position[0];
     float worldY = parentY + node->transform.position[1];
 
-    // Apply node transform (position is relative to center)
-    float nodeX = centerX + worldX;
-    float nodeY = centerY + worldY;
+    // Calculate viewport center
+    float viewportCenterX = startPos.x + viewportSize.x / 2;
+    float viewportCenterY = startPos.y + viewportSize.y / 2;
+
+    // Apply camera transform based on editor mode
+    if (is3D)
+    {
+        // For 3D mode
+        float zoom = camera3D.zoom / 5.0f;
+
+        // Apply camera rotation (simplified for 2D representation of 3D)
+        float cosY = cosf(camera3D.rotY);
+        float sinY = sinf(camera3D.rotY);
+        float rotatedX = worldX * cosY - worldY * sinY;
+        float rotatedY = worldX * sinY + worldY * cosY;
+
+        // Convert world position to screen position
+        worldX = viewportCenterX + (rotatedX - camera3D.posX) * zoom;
+        worldY = viewportCenterY + (rotatedY - camera3D.posZ) * zoom;
+    }
+    else
+    {
+        // For 2D mode
+        // Convert world position to screen position
+        worldX = viewportCenterX + (worldX - camera2D.posX) * camera2D.zoom;
+        worldY = viewportCenterY + (worldY - camera2D.posY) * camera2D.zoom;
+    }
+
+    // Set node position directly in screen space
+    float nodeX = worldX;
+    float nodeY = worldY;
+
+    // Node position is already in screen space after camera transform
 
     // Node visual representation based on type
     ImU32 nodeColor = node->selected ? IM_COL32(255, 255, 0, 255) : IM_COL32(200, 200, 200, 255);
     float nodeSize = 10.0f;
+
+    // Adjust node size based on camera zoom
+    if (is3D)
+        nodeSize *= camera3D.zoom / 5.0f;
+    else
+        nodeSize *= camera2D.zoom;
 
     switch (node->type)
     {
@@ -1178,9 +1304,34 @@ void EngineUI::FindNodeAtPosition(std::shared_ptr<Node> node, ImVec2 pos, std::s
         float worldX = parentTransform.position[0] + node->transform.position[0];
         float worldY = parentTransform.position[1] + node->transform.position[1];
 
-        // Apply node transform (position is relative to center)
-        float nodeX = centerX + worldX;
-        float nodeY = centerY + worldY;
+        // Apply camera transform based on editor mode
+        bool is3D = is3DMode; // Use the current editor mode
+        if (is3D)
+        {
+            // Only apply 3D camera transform in 3D mode
+            float zoom = camera3D.zoom / 5.0f;
+
+            // Apply camera rotation (simplified for 2D representation of 3D)
+            float cosY = cosf(camera3D.rotY);
+            float sinY = sinf(camera3D.rotY);
+            float rotatedX = worldX * cosY - worldY * sinY;
+            float rotatedY = worldX * sinY + worldY * cosY;
+
+            // Apply camera position and zoom
+            worldX = (rotatedX - camera3D.posX) * zoom;
+            worldY = (rotatedY - camera3D.posZ) * zoom;
+        }
+        else
+        {
+            // Only apply 2D camera transform in 2D mode
+            // For 2D, we simply offset by camera position and scale by zoom
+            worldX = (worldX - camera2D.posX) * camera2D.zoom;
+            worldY = (worldY - camera2D.posY) * camera2D.zoom;
+        }
+
+        // Node position is already in screen space after camera transform
+        float nodeX = worldX;
+        float nodeY = worldY;
 
         // Increase the hit area for better selection
         float nodeSize = 15.0f; // Increased from 10.0f for better selection
@@ -1201,6 +1352,12 @@ void EngineUI::FindNodeAtPosition(std::shared_ptr<Node> node, ImVec2 pos, std::s
         // Apply scale to the hit area
         float worldScaleX = parentTransform.scale[0] * node->transform.scale[0];
         nodeSize *= worldScaleX; // Use X scale for simplicity
+
+        // Also apply camera zoom to hit area
+        if (is3D)
+            nodeSize *= camera3D.zoom / 5.0f;
+        else
+            nodeSize *= camera2D.zoom;
 
         // Check if mouse is over this node
         if (pos.x >= nodeX - nodeSize && pos.x <= nodeX + nodeSize &&

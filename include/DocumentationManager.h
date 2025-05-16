@@ -35,6 +35,14 @@ public:
     // Check if documentation is visible
     bool IsVisible() const;
 
+    // Node documentation registration
+    static void RegisterNodeDocumentation(const std::string &nodeType, const std::vector<MethodDoc> &methods);
+    static void RegisterNodeDescription(const std::string &nodeType, const std::string &description);
+
+    // Get documentation
+    static std::map<std::string, std::vector<MethodDoc>> &GetNodeDocumentation();
+    static std::map<std::string, std::string> &GetNodeDescriptions();
+
 private:
     // Documentation state
     bool isVisible = false;
@@ -55,9 +63,9 @@ private:
     std::string selectedNodeType;
     std::string selectedMethod;
 
-    // Node documentation cache
-    std::map<std::string, std::vector<MethodDoc>> nodeDocumentation;
-    std::map<std::string, std::string> nodeDescriptions;
+    // Node documentation cache - now static so nodes can register themselves
+    static std::map<std::string, std::vector<MethodDoc>> nodeDocumentation;
+    static std::map<std::string, std::string> nodeDescriptions;
 
     // Load documentation for all node types
     void LoadDocumentation();
