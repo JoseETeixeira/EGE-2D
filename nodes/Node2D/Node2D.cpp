@@ -1,4 +1,5 @@
 #include "Node2D.h"
+#include <imgui.h>
 
 Node2D::Node2D(const std::string &nodeName) : Node(nodeName, NodeType::Node2D)
 {
@@ -68,6 +69,15 @@ void Node2D::Render()
 std::string Node2D::GetTypeName() const
 {
     return "Node2D";
+}
+
+void Node2D::RenderInspectorProperties()
+{
+    // Call base class implementation to render transform properties
+    Node::RenderInspectorProperties();
+
+    // Node2D-specific properties could be added here
+    // For now, we just use the base class implementation
 }
 
 void Node2D::InitializeDocumentation()

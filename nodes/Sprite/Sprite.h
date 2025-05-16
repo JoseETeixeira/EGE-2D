@@ -27,6 +27,7 @@ public:
     virtual void Update(float deltaTime) override;
     virtual void Render() override;
     virtual std::string GetTypeName() const override;
+    virtual void RenderInspectorProperties() override;
 
     // Static documentation methods
     static void InitializeDocumentation();

@@ -49,6 +49,8 @@ private:
     std::map<NodeType, int> nodeCounters;
     std::string GenerateUniqueName(NodeType type);
 
+    // No node type registry needed - nodes will be auto-discovered
+
     // UI state
     float leftPanelWidth = 250.0f;
     float rightPanelWidth = 300.0f;
@@ -73,12 +75,38 @@ private:
     void InitializeSceneHierarchy();
     void RenderSceneNode(std::shared_ptr<Node> node);
     void RenderNodeContextMenu(std::shared_ptr<Node> node);
-    void AddChildNode(std::shared_ptr<Node> parent, const std::string &name, NodeType type);
+    void AddChildNode(std::shared_ptr<Node> parent, NodeType type);
+    std::shared_ptr<Node> CreateNodeOfType(NodeType type, const std::string &name);
 
     // Editor functionality
     void RenderGizmoControls();
-    void RenderNodeInEditor(std::shared_ptr<Node> node, bool is3D);
+    void RenderNodeInEditor(std::shared_ptr<Node> node, bool is3D,
+                            float parentX = 0.0f, float parentY = 0.0f,
+                            float parentRotation = 0.0f,
+                            float parentScaleX = 1.0f, float parentScaleY = 1.0f);
     void HandleNodeSelection(ImVec2 mousePos);
+    void RenderGizmos(ImVec2 startPos, ImVec2 viewportSize);
+    void FindNodeAtPosition(std::shared_ptr<Node> node, ImVec2 pos, std::shared_ptr<Node> &result, Node::Transform parentTransform = Node::Transform());
+
+    // Helper function to calculate a node's world position
+    void CalculateNodeWorldTransform(std::shared_ptr<Node> node, float &outWorldX, float &outWorldY);
+
+    // Helper function to apply a transform operation to a node and all its children
+    template <typename TransformFunc>
+    void ApplyTransformToNodeAndChildren(std::shared_ptr<Node> node, TransformFunc transformFunc)
+    {
+        if (!node)
+            return;
+
+        // Apply the transform to this node
+        transformFunc(node->transform);
+
+        // Apply the same transform to all children recursively
+        for (auto &child : node->children)
+        {
+            ApplyTransformToNodeAndChildren(child, transformFunc);
+        }
+    }
 
     // Node transforms are now part of the Node class
 

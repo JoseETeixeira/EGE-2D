@@ -33,27 +33,23 @@ void EngineUI::InitializeSceneHierarchy()
     rootNode->expanded = true;
 
     // Add some example nodes with unique names
-    auto node2D = std::make_shared<Node2D>(GenerateUniqueName(NodeType::Node2D));
-    rootNode->children.push_back(node2D);
+    AddChildNode(rootNode, NodeType::Node2D);
+    auto node2D = rootNode->children.back();
 
-    auto characterBody = std::make_shared<Node>(GenerateUniqueName(NodeType::CharacterBody2D), NodeType::CharacterBody2D);
-    node2D->children.push_back(characterBody);
+    AddChildNode(node2D, NodeType::CharacterBody2D);
+    auto characterBody = node2D->children.back();
 
-    auto sprite = std::make_shared<Sprite>(GenerateUniqueName(NodeType::Sprite));
-    characterBody->children.push_back(sprite);
+    AddChildNode(characterBody, NodeType::Sprite);
 
-    auto camera = std::make_shared<Node>(GenerateUniqueName(NodeType::Camera), NodeType::Camera);
-    rootNode->children.push_back(camera);
+    AddChildNode(rootNode, NodeType::Camera);
 
+    // Create a UI node with custom name
     auto ui = std::make_shared<Node2D>("UI", NodeType::Node2D);
     nodeCounters[NodeType::Node2D]++; // Manually increment for this custom-named node
     rootNode->children.push_back(ui);
 
-    auto label = std::make_shared<Node>(GenerateUniqueName(NodeType::Label), NodeType::Label);
-    ui->children.push_back(label);
-
-    auto button = std::make_shared<Node>(GenerateUniqueName(NodeType::Button), NodeType::Button);
-    ui->children.push_back(button);
+    AddChildNode(ui, NodeType::Label);
+    AddChildNode(ui, NodeType::Button);
 }
 
 bool EngineUI::Init()
@@ -76,6 +72,29 @@ bool EngineUI::Init()
 void EngineUI::HandleDocumentationKeyPress(int key, int scancode, int action, int mods)
 {
     docManager.HandleKeyPress(key, scancode, action, mods);
+
+    // Handle gizmo operation shortcuts
+    if (action == 1) // Key press
+    {
+        switch (key)
+        {
+        case 81: // Q key - Select
+            currentGizmoOp = GizmoOperation::Select;
+            break;
+
+        case 87: // W key - Translate
+            currentGizmoOp = GizmoOperation::Translate;
+            break;
+
+        case 69: // E key - Rotate
+            currentGizmoOp = GizmoOperation::Rotate;
+            break;
+
+        case 82: // R key - Scale
+            currentGizmoOp = GizmoOperation::Scale;
+            break;
+        }
+    }
 }
 
 bool EngineUI::LoadFonts()
@@ -388,20 +407,48 @@ void EngineUI::RenderScenePanel()
 
     if (ImGui::BeginPopup("AddNodePopup"))
     {
-        if (ImGui::MenuItem("Node2D"))
-            AddChildNode(rootNode, "Node2D", NodeType::Node2D);
-        if (ImGui::MenuItem("Sprite"))
-            AddChildNode(rootNode, "Sprite", NodeType::Sprite);
-        if (ImGui::MenuItem("CharacterBody2D"))
-            AddChildNode(rootNode, "CharacterBody2D", NodeType::CharacterBody2D);
-        if (ImGui::MenuItem("Camera"))
-            AddChildNode(rootNode, "Camera", NodeType::Camera);
-        if (ImGui::MenuItem("Light"))
-            AddChildNode(rootNode, "Light", NodeType::Light);
-        if (ImGui::MenuItem("Label"))
-            AddChildNode(rootNode, "Label", NodeType::Label);
-        if (ImGui::MenuItem("Button"))
-            AddChildNode(rootNode, "Button", NodeType::Button);
+        // Get available node types from Node class
+        std::vector<NodeType> nodeTypes = Node::GetAvailableNodeTypes();
+
+        // Display menu items for each node type
+        for (const auto &type : nodeTypes)
+        {
+            // Get name based on type
+            std::string name;
+            switch (type)
+            {
+            case NodeType::Node2D:
+                name = "Node2D";
+                break;
+            case NodeType::Sprite:
+                name = "Sprite";
+                break;
+            case NodeType::CharacterBody2D:
+                name = "CharacterBody2D";
+                break;
+            case NodeType::Camera:
+                name = "Camera";
+                break;
+            case NodeType::Light:
+                name = "Light";
+                break;
+            case NodeType::Label:
+                name = "Label";
+                break;
+            case NodeType::Button:
+                name = "Button";
+                break;
+            case NodeType::Panel:
+                name = "Panel";
+                break;
+            default:
+                name = "Unknown";
+                break;
+            }
+
+            if (ImGui::MenuItem(name.c_str()))
+                AddChildNode(rootNode, type);
+        }
         ImGui::EndPopup();
     }
 
@@ -487,20 +534,48 @@ void EngineUI::RenderNodeContextMenu(std::shared_ptr<Node> node)
 
     if (ImGui::BeginPopup("AddChildNodePopup"))
     {
-        if (ImGui::MenuItem("Node2D"))
-            AddChildNode(node, "Node2D", NodeType::Node2D);
-        if (ImGui::MenuItem("Sprite"))
-            AddChildNode(node, "Sprite", NodeType::Sprite);
-        if (ImGui::MenuItem("CharacterBody2D"))
-            AddChildNode(node, "CharacterBody2D", NodeType::CharacterBody2D);
-        if (ImGui::MenuItem("Camera"))
-            AddChildNode(node, "Camera", NodeType::Camera);
-        if (ImGui::MenuItem("Light"))
-            AddChildNode(node, "Light", NodeType::Light);
-        if (ImGui::MenuItem("Label"))
-            AddChildNode(node, "Label", NodeType::Label);
-        if (ImGui::MenuItem("Button"))
-            AddChildNode(node, "Button", NodeType::Button);
+        // Get available node types from Node class
+        std::vector<NodeType> nodeTypes = Node::GetAvailableNodeTypes();
+
+        // Display menu items for each node type
+        for (const auto &type : nodeTypes)
+        {
+            // Get name based on type
+            std::string name;
+            switch (type)
+            {
+            case NodeType::Node2D:
+                name = "Node2D";
+                break;
+            case NodeType::Sprite:
+                name = "Sprite";
+                break;
+            case NodeType::CharacterBody2D:
+                name = "CharacterBody2D";
+                break;
+            case NodeType::Camera:
+                name = "Camera";
+                break;
+            case NodeType::Light:
+                name = "Light";
+                break;
+            case NodeType::Label:
+                name = "Label";
+                break;
+            case NodeType::Button:
+                name = "Button";
+                break;
+            case NodeType::Panel:
+                name = "Panel";
+                break;
+            default:
+                name = "Unknown";
+                break;
+            }
+
+            if (ImGui::MenuItem(name.c_str()))
+                AddChildNode(node, type);
+        }
         ImGui::EndPopup();
     }
 
@@ -567,7 +642,7 @@ std::string EngineUI::GenerateUniqueName(NodeType type)
     return baseName + std::to_string(nodeCounters[type]);
 }
 
-void EngineUI::AddChildNode(std::shared_ptr<Node> parent, const std::string &name, NodeType type)
+void EngineUI::AddChildNode(std::shared_ptr<Node> parent, NodeType type)
 {
     if (!parent)
         return;
@@ -591,11 +666,28 @@ void EngineUI::AddChildNode(std::shared_ptr<Node> parent, const std::string &nam
         break;
     }
 
-    // Add it to the parent's children
-    parent->children.push_back(newNode);
+    if (newNode)
+    {
+        // Add it to the parent's children
+        parent->children.push_back(newNode);
 
-    // Expand the parent to show the new child
-    parent->expanded = true;
+        // Expand the parent to show the new child
+        parent->expanded = true;
+    }
+}
+
+std::shared_ptr<Node> EngineUI::CreateNodeOfType(NodeType type, const std::string &name)
+{
+    // Create node based on type
+    switch (type)
+    {
+    case NodeType::Node2D:
+        return std::make_shared<Node2D>(name);
+    case NodeType::Sprite:
+        return std::make_shared<Sprite>(name);
+    default:
+        return std::make_shared<Node>(name, type);
+    }
 }
 
 void EngineUI::RenderEditorPanel()
@@ -605,6 +697,7 @@ void EngineUI::RenderEditorPanel()
     ImGui::SameLine(ImGui::GetContentRegionAvail().x - 100);
     RenderModeToggle();
     ImGui::PopFont();
+
     ImGui::Separator();
 
     // Render the appropriate editor based on the current mode
@@ -663,6 +756,9 @@ void EngineUI::Render2DEditor()
     ImDrawList *drawList = ImGui::GetWindowDrawList();
     ImVec2 startPos = ImGui::GetCursorScreenPos();
 
+    // Add gizmo controls on top of the editor
+    RenderGizmoControls();
+
     // Grid settings
     float gridSize = 20.0f;
     ImU32 gridColor = IM_COL32(100, 100, 100, 40);
@@ -699,8 +795,29 @@ void EngineUI::Render2DEditor()
         ImVec2(startPos.x + viewportSize.x, centerY),
         IM_COL32(0, 255, 0, 100), 2.0f);
 
+    // Render nodes in the editor
+    if (rootNode)
+    {
+        for (auto &node : rootNode->children)
+        {
+            RenderNodeInEditor(node, false);
+        }
+    }
+
+    // Render gizmos for the selected node
+    if (selectedNode)
+    {
+        RenderGizmos(startPos, viewportSize);
+    }
+
     // Make the viewport area interactive
     ImGui::InvisibleButton("viewport2d", viewportSize);
+
+    // Handle node selection when clicking in the viewport
+    if (ImGui::IsItemClicked())
+    {
+        HandleNodeSelection(ImGui::GetIO().MousePos);
+    }
 }
 
 void EngineUI::Render3DEditor()
@@ -718,6 +835,9 @@ void EngineUI::Render3DEditor()
     // Draw a 3D grid in the viewport
     ImDrawList *drawList = ImGui::GetWindowDrawList();
     ImVec2 startPos = ImGui::GetCursorScreenPos();
+
+    // Add gizmo controls on top of the editor
+    RenderGizmoControls();
 
     // Grid settings
     float gridSize = 30.0f;
@@ -813,184 +933,584 @@ void EngineUI::RenderInspectorPanel()
     ImGui::PopFont();
     ImGui::SameLine();
     ImGui::Text("%s (%s)", selectedNode->name.c_str(),
-                selectedNode->type == NodeType::Root ? "Root" : selectedNode->type == NodeType::Node2D        ? "Node2D"
-                                                            : selectedNode->type == NodeType::Sprite          ? "Sprite"
-                                                            : selectedNode->type == NodeType::CharacterBody2D ? "CharacterBody2D"
-                                                            : selectedNode->type == NodeType::Camera          ? "Camera"
-                                                            : selectedNode->type == NodeType::Light           ? "Light"
-                                                            : selectedNode->type == NodeType::Label           ? "Label"
-                                                            : selectedNode->type == NodeType::Button          ? "Button"
-                                                            : selectedNode->type == NodeType::Panel           ? "Panel"
-                                                                                                              : "Unknown");
+                selectedNode->GetTypeName().c_str());
 
     ImGui::Separator();
 
-    // Properties section
-    ImGui::PushFont(boldFont);
-    ImGui::Text("Transform");
+    // Let the node render its own properties
+    selectedNode->RenderInspectorProperties();
+}
+
+// Render gizmo control buttons
+void EngineUI::RenderGizmoControls()
+{
+    // Define button size and spacing
+    float buttonSize = 30.0f;
+    ImVec2 buttonDim(buttonSize, buttonSize);
+
+    // Create a small window for the gizmo controls at the top of the editor
+    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+    ImVec2 windowPos = ImGui::GetCursorScreenPos();
+    ImVec2 controlsPos = ImVec2(windowPos.x + viewportSize.x / 2 - (buttonSize * 4 + 12) / 2, windowPos.y + 5);
+
+    ImGui::SetCursorScreenPos(controlsPos);
+
+    // Background for the controls
+    ImGui::GetWindowDrawList()->AddRectFilled(
+        ImVec2(controlsPos.x - 5, controlsPos.y - 5),
+        ImVec2(controlsPos.x + buttonSize * 4 + 15, controlsPos.y + buttonSize + 5),
+        IM_COL32(40, 40, 40, 200), 5.0f);
+
+    // Select button
+    bool isSelectActive = currentGizmoOp == GizmoOperation::Select;
+    if (isSelectActive)
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+
+    ImGui::PushFont(iconFont);
+    if (ImGui::Button("\xef\x80\xad", buttonDim)) // fa-mouse-pointer
+    {
+        currentGizmoOp = GizmoOperation::Select;
+    }
     ImGui::PopFont();
 
-    // Position
-    ImGui::Text("Position");
-    ImGui::SameLine(100);
-    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputFloat3("##Position", selectedNode->transform.position);
-    ImGui::PopItemWidth();
+    if (isSelectActive)
+        ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Select (Q)");
 
-    // Rotation
-    ImGui::Text("Rotation");
-    ImGui::SameLine(100);
-    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputFloat3("##Rotation", selectedNode->transform.rotation);
-    ImGui::PopItemWidth();
+    // Translate button
+    ImGui::SameLine();
+    bool isTranslateActive = currentGizmoOp == GizmoOperation::Translate;
+    if (isTranslateActive)
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
 
-    // Scale
-    ImGui::Text("Scale");
-    ImGui::SameLine(100);
-    ImGui::Text("Scale");
-    ImGui::SameLine(100);
-    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-    ImGui::InputFloat3("##Scale", selectedNode->transform.scale);
-    ImGui::PopItemWidth();
-
-    ImGui::Separator();
-
-    // Node-specific properties
-    switch (selectedNode->type)
+    ImGui::PushFont(iconFont);
+    if (ImGui::Button("\xef\x81\x95", buttonDim)) // fa-arrows
     {
-    case NodeType::Sprite:
-    {
-        ImGui::PushFont(boldFont);
-        ImGui::Text("Sprite Properties");
-        ImGui::PopFont();
-
-        // Texture
-        ImGui::Text("Texture");
-        ImGui::SameLine(100);
-        ImGui::Button("Select Texture", ImVec2(ImGui::GetContentRegionAvail().x, 0));
-
-        // Color
-        static float color[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-        ImGui::Text("Color");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::ColorEdit4("##Color", color);
-        ImGui::PopItemWidth();
-        break;
+        currentGizmoOp = GizmoOperation::Translate;
     }
+    ImGui::PopFont();
+
+    if (isTranslateActive)
+        ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Translate (W)");
+
+    // Rotate button
+    ImGui::SameLine();
+    bool isRotateActive = currentGizmoOp == GizmoOperation::Rotate;
+    if (isRotateActive)
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+
+    ImGui::PushFont(iconFont);
+    if (ImGui::Button("\xef\x81\x82", buttonDim)) // fa-refresh
+    {
+        currentGizmoOp = GizmoOperation::Rotate;
+    }
+    ImGui::PopFont();
+
+    if (isRotateActive)
+        ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Rotate (E)");
+
+    // Scale button
+    ImGui::SameLine();
+    bool isScaleActive = currentGizmoOp == GizmoOperation::Scale;
+    if (isScaleActive)
+        ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));
+
+    ImGui::PushFont(iconFont);
+    if (ImGui::Button("\xef\x83\x91", buttonDim)) // fa-expand
+    {
+        currentGizmoOp = GizmoOperation::Scale;
+    }
+    ImGui::PopFont();
+
+    if (isScaleActive)
+        ImGui::PopStyleColor();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("Scale (R)");
+
+    // Reset cursor position for the rest of the content
+    ImGui::SetCursorScreenPos(windowPos);
+}
+
+// Render a node in the editor
+void EngineUI::RenderNodeInEditor(std::shared_ptr<Node> node, bool is3D,
+                                  float parentX, float parentY,
+                                  float parentRotation,
+                                  float parentScaleX, float parentScaleY)
+{
+    if (!node)
+        return;
+
+    // Skip rendering for certain node types
+    if (node->type == NodeType::Root)
+    {
+        // Recursively render children
+        for (auto &child : node->children)
+        {
+            RenderNodeInEditor(child, is3D, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f);
+        }
+        return;
+    }
+
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+    ImVec2 startPos = ImGui::GetCursorScreenPos();
+    ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+
+    // Calculate node position in viewport
+    float centerX = startPos.x + viewportSize.x / 2;
+    float centerY = startPos.y + viewportSize.y / 2;
+
+    // Apply parent transform to this node's position
+    float worldX = parentX + node->transform.position[0];
+    float worldY = parentY + node->transform.position[1];
+
+    // Apply node transform (position is relative to center)
+    float nodeX = centerX + worldX;
+    float nodeY = centerY + worldY;
+
+    // Node visual representation based on type
+    ImU32 nodeColor = node->selected ? IM_COL32(255, 255, 0, 255) : IM_COL32(200, 200, 200, 255);
+    float nodeSize = 10.0f;
+
+    switch (node->type)
+    {
+    case NodeType::Node2D:
+        // Draw a square
+        drawList->AddRect(
+            ImVec2(nodeX - nodeSize, nodeY - nodeSize),
+            ImVec2(nodeX + nodeSize, nodeY + nodeSize),
+            nodeColor, 0.0f, 0, 2.0f);
+        break;
+
+    case NodeType::Sprite:
+        // Draw a filled square
+        drawList->AddRectFilled(
+            ImVec2(nodeX - nodeSize, nodeY - nodeSize),
+            ImVec2(nodeX + nodeSize, nodeY + nodeSize),
+            nodeColor);
+        break;
 
     case NodeType::CharacterBody2D:
-    {
-        ImGui::PushFont(boldFont);
-        ImGui::Text("CharacterBody2D Properties");
-        ImGui::PopFont();
-
-        // Speed
-        static float speed = 200.0f;
-        ImGui::Text("Speed");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderFloat("##Speed", &speed, 0.0f, 500.0f, "%.1f");
-        ImGui::PopItemWidth();
-
-        // Jump Height
-        static float jumpHeight = 50.0f;
-        ImGui::Text("Jump Height");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderFloat("##JumpHeight", &jumpHeight, 0.0f, 200.0f, "%.1f");
-        ImGui::PopItemWidth();
-
-        // Gravity
-        static float gravity = 9.8f;
-        ImGui::Text("Gravity");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderFloat("##Gravity", &gravity, 0.0f, 20.0f, "%.1f");
-        ImGui::PopItemWidth();
+        // Draw a circle
+        drawList->AddCircle(ImVec2(nodeX, nodeY), nodeSize, nodeColor, 0, 2.0f);
         break;
-    }
 
     case NodeType::Camera:
-    {
-        ImGui::PushFont(boldFont);
-        ImGui::Text("Camera Properties");
-        ImGui::PopFont();
-
-        // Zoom
-        static float zoom = 1.0f;
-        ImGui::Text("Zoom");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderFloat("##Zoom", &zoom, 0.1f, 10.0f, "%.2f");
-        ImGui::PopItemWidth();
-
-        // Current
-        static bool current = true;
-        ImGui::Text("Current");
-        ImGui::SameLine(100);
-        ImGui::Checkbox("##Current", &current);
+        // Draw a camera icon
+        drawList->AddTriangleFilled(
+            ImVec2(nodeX - nodeSize, nodeY - nodeSize),
+            ImVec2(nodeX + nodeSize, nodeY),
+            ImVec2(nodeX - nodeSize, nodeY + nodeSize),
+            nodeColor);
         break;
-    }
-
-    case NodeType::Label:
-    {
-        ImGui::PushFont(boldFont);
-        ImGui::Text("Label Properties");
-        ImGui::PopFont();
-
-        // Text
-        static char text[256] = "Label Text";
-        ImGui::Text("Text");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::InputText("##Text", text, IM_ARRAYSIZE(text));
-        ImGui::PopItemWidth();
-
-        // Font Size
-        static int fontSize = 16;
-        ImGui::Text("Font Size");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::SliderInt("##FontSize", &fontSize, 8, 72);
-        ImGui::PopItemWidth();
-
-        // Color
-        static float textColor[4] = {1.0f, 1.0f, 1.0f, 1.0f};
-        ImGui::Text("Color");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::ColorEdit4("##TextColor", textColor);
-        ImGui::PopItemWidth();
-        break;
-    }
-
-    case NodeType::Button:
-    {
-        ImGui::PushFont(boldFont);
-        ImGui::Text("Button Properties");
-        ImGui::PopFont();
-
-        // Text
-        static char buttonText[256] = "Button";
-        ImGui::Text("Text");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::InputText("##ButtonText", buttonText, IM_ARRAYSIZE(buttonText));
-        ImGui::PopItemWidth();
-
-        // Size
-        static float buttonSize[2] = {100.0f, 30.0f};
-        ImGui::Text("Size");
-        ImGui::SameLine(100);
-        ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
-        ImGui::InputFloat2("##ButtonSize", buttonSize);
-        ImGui::PopItemWidth();
-        break;
-    }
 
     default:
-        // No specific properties for other node types
+        // Draw a circle for other types
+        drawList->AddCircle(ImVec2(nodeX, nodeY), nodeSize, nodeColor, 0, 2.0f);
         break;
+    }
+
+    // Draw node name if selected
+    if (node->selected)
+    {
+        drawList->AddText(ImVec2(nodeX + nodeSize + 5, nodeY - 10),
+                          IM_COL32(255, 255, 255, 255), node->name.c_str());
+    }
+
+    // Calculate combined transform to pass to children
+    float combinedX = worldX;
+    float combinedY = worldY;
+    float combinedRotation = parentRotation + node->transform.rotation[2];
+    float combinedScaleX = parentScaleX * node->transform.scale[0];
+    float combinedScaleY = parentScaleY * node->transform.scale[1];
+
+    // Recursively render children with combined transform
+    for (auto &child : node->children)
+    {
+        RenderNodeInEditor(child, is3D, combinedX, combinedY, combinedRotation, combinedScaleX, combinedScaleY);
+    }
+}
+
+// Handle node selection in the editor
+void EngineUI::HandleNodeSelection(ImVec2 mousePos)
+{
+    // Deselect current node
+    if (selectedNode)
+    {
+        selectedNode->selected = false;
+    }
+
+    // Find node under mouse cursor
+    std::shared_ptr<Node> clickedNode = nullptr;
+    Node::Transform emptyTransform; // Default transform with no offset
+    FindNodeAtPosition(rootNode, mousePos, clickedNode, emptyTransform);
+
+    // Select the node
+    if (clickedNode)
+    {
+        clickedNode->selected = true;
+        selectedNode = clickedNode;
+    }
+}
+
+// Helper function to find a node at a specific position
+void EngineUI::FindNodeAtPosition(std::shared_ptr<Node> node, ImVec2 pos, std::shared_ptr<Node> &result,
+                                  Node::Transform parentTransform)
+{
+    if (!node)
+        return;
+
+    // Skip root node
+    if (node->type != NodeType::Root)
+    {
+        ImVec2 startPos = ImGui::GetCursorScreenPos();
+        ImVec2 viewportSize = ImGui::GetContentRegionAvail();
+
+        // Calculate node position in viewport
+        float centerX = startPos.x + viewportSize.x / 2;
+        float centerY = startPos.y + viewportSize.y / 2;
+
+        // Apply parent position to this node's position
+        float worldX = parentTransform.position[0] + node->transform.position[0];
+        float worldY = parentTransform.position[1] + node->transform.position[1];
+
+        // Apply node transform (position is relative to center)
+        float nodeX = centerX + worldX;
+        float nodeY = centerY + worldY;
+
+        // Increase the hit area for better selection
+        float nodeSize = 15.0f; // Increased from 10.0f for better selection
+
+        // Adjust hit area based on node type
+        switch (node->type)
+        {
+        case NodeType::Sprite:
+            nodeSize = 20.0f; // Larger hit area for sprites
+            break;
+        case NodeType::CharacterBody2D:
+            nodeSize = 20.0f; // Larger hit area for character bodies
+            break;
+        default:
+            break;
+        }
+
+        // Apply scale to the hit area
+        float worldScaleX = parentTransform.scale[0] * node->transform.scale[0];
+        nodeSize *= worldScaleX; // Use X scale for simplicity
+
+        // Check if mouse is over this node
+        if (pos.x >= nodeX - nodeSize && pos.x <= nodeX + nodeSize &&
+            pos.y >= nodeY - nodeSize && pos.y <= nodeY + nodeSize)
+        {
+            result = node;
+            return;
+        }
+
+        // Create combined transform to pass to children
+        Node::Transform combinedTransform;
+        combinedTransform.position[0] = worldX;
+        combinedTransform.position[1] = worldY;
+        combinedTransform.rotation[2] = parentTransform.rotation[2] + node->transform.rotation[2];
+        combinedTransform.scale[0] = worldScaleX;
+        combinedTransform.scale[1] = parentTransform.scale[1] * node->transform.scale[1];
+
+        // Pass the combined transform to children
+        parentTransform = combinedTransform;
+    }
+
+    // Check children in reverse order (to select top-most node first)
+    for (auto it = node->children.rbegin(); it != node->children.rend(); ++it)
+    {
+        FindNodeAtPosition(*it, pos, result, parentTransform);
+        if (result)
+            return;
+    }
+}
+
+// Helper function to calculate a node's world position
+void EngineUI::CalculateNodeWorldTransform(std::shared_ptr<Node> node, float &outWorldX, float &outWorldY)
+{
+    if (!node)
+    {
+        outWorldX = 0.0f;
+        outWorldY = 0.0f;
+        return;
+    }
+
+    // Start with the node's local position
+    outWorldX = node->transform.position[0];
+    outWorldY = node->transform.position[1];
+
+    // Traverse up the parent hierarchy to calculate world position
+    std::shared_ptr<Node> parent = nullptr;
+
+    // Find the parent by searching through all nodes
+    if (node != rootNode) // Skip if this is the root node
+    {
+        std::function<bool(std::shared_ptr<Node>, std::shared_ptr<Node>, std::shared_ptr<Node> &)> findParent;
+        findParent = [&findParent](std::shared_ptr<Node> current, std::shared_ptr<Node> target, std::shared_ptr<Node> &result) -> bool
+        {
+            for (auto &child : current->children)
+            {
+                if (child == target)
+                {
+                    result = current;
+                    return true;
+                }
+                if (findParent(child, target, result))
+                    return true;
+            }
+            return false;
+        };
+
+        findParent(rootNode, node, parent);
+    }
+
+    // If we found a parent, add its world position
+    if (parent)
+    {
+        float parentX, parentY;
+        CalculateNodeWorldTransform(parent, parentX, parentY);
+        outWorldX += parentX;
+        outWorldY += parentY;
+    }
+}
+
+// Render gizmos for the selected node
+void EngineUI::RenderGizmos(ImVec2 startPos, ImVec2 viewportSize)
+{
+    if (!selectedNode)
+        return;
+
+    ImDrawList *drawList = ImGui::GetWindowDrawList();
+
+    // Calculate node position in viewport
+    float centerX = startPos.x + viewportSize.x / 2;
+    float centerY = startPos.y + viewportSize.y / 2;
+
+    // Calculate world position of the selected node
+    float worldX, worldY;
+    CalculateNodeWorldTransform(selectedNode, worldX, worldY);
+
+    // Apply world transform to viewport coordinates
+    float nodeX = centerX + worldX;
+    float nodeY = centerY + worldY;
+
+    // Gizmo colors
+    ImU32 xAxisColor = IM_COL32(255, 0, 0, 255);
+    ImU32 yAxisColor = IM_COL32(0, 255, 0, 255);
+    ImU32 zAxisColor = IM_COL32(0, 0, 255, 255);
+
+    // Gizmo size
+    float gizmoSize = 50.0f;
+
+    // Handle gizmo interaction
+    ImVec2 mousePos = ImGui::GetIO().MousePos;
+    static bool isDraggingGizmo = false;
+    static ImVec2 lastMousePos;
+    static int activeAxis = -1; // 0 = X, 1 = Y, -1 = none
+
+    // Check if mouse is over gizmo handles
+    bool isMouseOverGizmo = false;
+
+    switch (currentGizmoOp)
+    {
+    case GizmoOperation::Select:
+        // Draw selection box
+        drawList->AddRect(
+            ImVec2(nodeX - 15, nodeY - 15),
+            ImVec2(nodeX + 15, nodeY + 15),
+            IM_COL32(255, 255, 0, 255), 0.0f, 0, 1.0f);
+        break;
+
+    case GizmoOperation::Translate:
+        // Draw translation arrows
+        // X-axis (right)
+        drawList->AddLine(ImVec2(nodeX, nodeY), ImVec2(nodeX + gizmoSize, nodeY), xAxisColor, 2.0f);
+        drawList->AddTriangleFilled(
+            ImVec2(nodeX + gizmoSize, nodeY),
+            ImVec2(nodeX + gizmoSize - 10, nodeY - 5),
+            ImVec2(nodeX + gizmoSize - 10, nodeY + 5),
+            xAxisColor);
+
+        // Y-axis (up)
+        drawList->AddLine(ImVec2(nodeX, nodeY), ImVec2(nodeX, nodeY - gizmoSize), yAxisColor, 2.0f);
+        drawList->AddTriangleFilled(
+            ImVec2(nodeX, nodeY - gizmoSize),
+            ImVec2(nodeX - 5, nodeY - gizmoSize + 10),
+            ImVec2(nodeX + 5, nodeY - gizmoSize + 10),
+            yAxisColor);
+
+        // Check if mouse is over X-axis handle
+        if (mousePos.x >= nodeX && mousePos.x <= nodeX + gizmoSize &&
+            mousePos.y >= nodeY - 5 && mousePos.y <= nodeY + 5)
+        {
+            isMouseOverGizmo = true;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                isDraggingGizmo = true;
+                lastMousePos = mousePos;
+                activeAxis = 0; // X-axis
+            }
+        }
+        // Check if mouse is over Y-axis handle
+        else if (mousePos.x >= nodeX - 5 && mousePos.x <= nodeX + 5 &&
+                 mousePos.y >= nodeY - gizmoSize && mousePos.y <= nodeY)
+        {
+            isMouseOverGizmo = true;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                isDraggingGizmo = true;
+                lastMousePos = mousePos;
+                activeAxis = 1; // Y-axis
+            }
+        }
+        break;
+
+    case GizmoOperation::Rotate:
+    {
+        // Draw rotation circle
+        drawList->AddCircle(ImVec2(nodeX, nodeY), gizmoSize / 2, IM_COL32(255, 255, 0, 255), 32, 2.0f);
+
+        // Check if mouse is near the rotation circle
+        float distToCenter = sqrt(pow(mousePos.x - nodeX, 2) + pow(mousePos.y - nodeY, 2));
+        if (distToCenter >= gizmoSize / 2 - 5 && distToCenter <= gizmoSize / 2 + 5)
+        {
+            isMouseOverGizmo = true;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                isDraggingGizmo = true;
+                lastMousePos = mousePos;
+                activeAxis = 2; // Rotation
+            }
+        }
+        break;
+    }
+
+    case GizmoOperation::Scale:
+        // Draw scale handles
+        // X-axis
+        drawList->AddLine(ImVec2(nodeX, nodeY), ImVec2(nodeX + gizmoSize, nodeY), xAxisColor, 2.0f);
+        drawList->AddRectFilled(
+            ImVec2(nodeX + gizmoSize - 5, nodeY - 5),
+            ImVec2(nodeX + gizmoSize + 5, nodeY + 5),
+            xAxisColor);
+
+        // Y-axis
+        drawList->AddLine(ImVec2(nodeX, nodeY), ImVec2(nodeX, nodeY - gizmoSize), yAxisColor, 2.0f);
+        drawList->AddRectFilled(
+            ImVec2(nodeX - 5, nodeY - gizmoSize - 5),
+            ImVec2(nodeX + 5, nodeY - gizmoSize + 5),
+            yAxisColor);
+
+        // Check if mouse is over X-axis scale handle
+        if (mousePos.x >= nodeX + gizmoSize - 5 && mousePos.x <= nodeX + gizmoSize + 5 &&
+            mousePos.y >= nodeY - 5 && mousePos.y <= nodeY + 5)
+        {
+            isMouseOverGizmo = true;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                isDraggingGizmo = true;
+                lastMousePos = mousePos;
+                activeAxis = 0; // X-axis scale
+            }
+        }
+        // Check if mouse is over Y-axis scale handle
+        else if (mousePos.x >= nodeX - 5 && mousePos.x <= nodeX + 5 &&
+                 mousePos.y >= nodeY - gizmoSize - 5 && mousePos.y <= nodeY - gizmoSize + 5)
+        {
+            isMouseOverGizmo = true;
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+            {
+                isDraggingGizmo = true;
+                lastMousePos = mousePos;
+                activeAxis = 1; // Y-axis scale
+            }
+        }
+        break;
+    }
+
+    // Set cursor based on gizmo operation
+    if (isMouseOverGizmo)
+    {
+        if (currentGizmoOp == GizmoOperation::Translate)
+        {
+            ImGui::SetMouseCursor(activeAxis == 0 ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
+        }
+        else if (currentGizmoOp == GizmoOperation::Rotate)
+        {
+            ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+        }
+        else if (currentGizmoOp == GizmoOperation::Scale)
+        {
+            ImGui::SetMouseCursor(activeAxis == 0 ? ImGuiMouseCursor_ResizeEW : ImGuiMouseCursor_ResizeNS);
+        }
+    }
+
+    // Handle dragging
+    if (isDraggingGizmo)
+    {
+        if (ImGui::IsMouseDown(ImGuiMouseButton_Left))
+        {
+            ImVec2 mouseDelta = ImVec2(mousePos.x - lastMousePos.x, mousePos.y - lastMousePos.y);
+
+            switch (currentGizmoOp)
+            {
+            case GizmoOperation::Translate:
+                if (activeAxis == 0) // X-axis
+                {
+                    // Apply translation only to the selected node
+                    selectedNode->transform.position[0] += mouseDelta.x;
+                }
+                else if (activeAxis == 1) // Y-axis
+                {
+                    // Apply translation only to the selected node
+                    selectedNode->transform.position[1] += mouseDelta.y; // Y should move up when dragging up
+                }
+                break;
+
+            case GizmoOperation::Rotate:
+                if (activeAxis == 2) // Rotation
+                {
+                    // Calculate angle change based on mouse movement relative to node center
+                    float prevAngle = atan2(lastMousePos.y - nodeY, lastMousePos.x - nodeX);
+                    float newAngle = atan2(mousePos.y - nodeY, mousePos.x - nodeX);
+                    float angleDelta = (newAngle - prevAngle) * 180.0f / 3.14159f; // Convert to degrees
+
+                    // Apply rotation only to the selected node
+                    selectedNode->transform.rotation[2] += angleDelta;
+                }
+                break;
+
+            case GizmoOperation::Scale:
+                if (activeAxis == 0) // X-axis scale
+                {
+                    float scaleFactor = 1.0f + mouseDelta.x / 100.0f;
+
+                    // Apply X scale only to the selected node
+                    selectedNode->transform.scale[0] *= scaleFactor;
+                }
+                else if (activeAxis == 1) // Y-axis scale
+                {
+                    float scaleFactor = 1.0f - mouseDelta.y / 100.0f; // Subtract because Y is inverted
+
+                    // Apply Y scale only to the selected node
+                    selectedNode->transform.scale[1] *= scaleFactor;
+                }
+                break;
+            }
+
+            lastMousePos = mousePos;
+        }
+        else
+        {
+            // Mouse released, stop dragging
+            isDraggingGizmo = false;
+            activeAxis = -1;
+        }
     }
 }

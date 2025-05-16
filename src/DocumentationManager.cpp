@@ -85,14 +85,21 @@ void DocumentationManager::Render()
 
     // Use a local copy of isVisible to prevent crashes when the window is closed
     bool visible = isVisible;
-    if (ImGui::Begin("Documentation", &visible, ImGuiWindowFlags_NoCollapse))
-    {
-        // Update the actual isVisible flag safely
-        if (!visible)
-        {
-            isVisible = false;
-        }
 
+    // Begin the documentation window
+    ImGui::Begin("Documentation", &visible, ImGuiWindowFlags_NoCollapse);
+
+    // Check if the window should be closed
+    if (!visible)
+    {
+        isVisible = false;
+        ImGui::End();
+        return;
+    }
+
+    // Only render content if the window is still visible
+    if (isVisible)
+    {
         // Render search bar at the top
         RenderSearchBar();
 
@@ -135,6 +142,8 @@ void DocumentationManager::Render()
             ImGui::Columns(1);
         }
     }
+
+    // Always end the window
     ImGui::End();
 }
 

@@ -1,5 +1,6 @@
 #include "Node.h"
 #include <algorithm>
+#include <imgui.h>
 
 // Initialize static members
 std::map<std::string, std::vector<MethodDoc>> Node::documentation;
@@ -79,6 +80,51 @@ void Node::Render()
     {
         child->Render();
     }
+}
+
+void Node::RenderInspectorProperties()
+{
+    // Base implementation just shows transform properties
+    ImGui::Text("Transform");
+
+    // Position
+    ImGui::Text("Position");
+    ImGui::SameLine(100);
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::InputFloat3("##Position", transform.position);
+    ImGui::PopItemWidth();
+
+    // Rotation
+    ImGui::Text("Rotation");
+    ImGui::SameLine(100);
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::InputFloat3("##Rotation", transform.rotation);
+    ImGui::PopItemWidth();
+
+    // Scale
+    ImGui::Text("Scale");
+    ImGui::SameLine(100);
+    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x);
+    ImGui::InputFloat3("##Scale", transform.scale);
+    ImGui::PopItemWidth();
+}
+
+std::vector<NodeType> Node::GetAvailableNodeTypes()
+{
+    // Return all available node types
+    std::vector<NodeType> types;
+
+    // Add all node types except Root
+    for (int i = 0; i <= static_cast<int>(NodeType::Panel); i++)
+    {
+        NodeType type = static_cast<NodeType>(i);
+        if (type != NodeType::Root) // Skip Root type as it's special
+        {
+            types.push_back(type);
+        }
+    }
+
+    return types;
 }
 
 void Node::AddChild(std::shared_ptr<Node> child)

@@ -65,6 +65,10 @@ public:
     virtual void Update(float deltaTime);
     virtual void Render();
 
+    // Inspector rendering
+    virtual void RenderInspectorProperties();
+    static std::vector<NodeType> GetAvailableNodeTypes();
+
     // Child management
     void AddChild(std::shared_ptr<Node> child);
     void RemoveChild(std::shared_ptr<Node> child);

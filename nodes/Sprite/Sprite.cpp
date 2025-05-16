@@ -1,4 +1,5 @@
 #include "Sprite.h"
+#include <imgui.h>
 
 Sprite::Sprite(const std::string &nodeName) : Node2D(nodeName, NodeType::Sprite)
 {
@@ -55,6 +56,35 @@ void Sprite::Render()
 
     // Call base class render
     Node2D::Render();
+}
+
+void Sprite::RenderInspectorProperties()
+{
+    // First render the transform properties from the base class
+    Node2D::RenderInspectorProperties();
+
+    ImGui::Separator();
+
+    // Sprite-specific properties
+    ImGui::Text("Sprite Properties");
+
+    // Texture
+    ImGui::Text("Texture");
+    ImGui::SameLine(100);
+
+    // Display current texture path if any
+    std::string displayPath = texturePath.empty() ? "No texture selected" : texturePath;
+    ImGui::Text("%s", displayPath.c_str());
+    ImGui::SameLine();
+    if (ImGui::Button("Select##Texture"))
+    {
+        // In a real implementation, this would open a file dialog
+    }
+
+    // Color
+    ImGui::Text("Color");
+    ImGui::SameLine(100);
+    ImGui::ColorEdit4("##Color", color);
 }
 
 std::string Sprite::GetTypeName() const
