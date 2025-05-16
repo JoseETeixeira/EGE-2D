@@ -7,6 +7,7 @@
 #include <mutex>
 #include <atomic>
 #include <condition_variable>
+#include "EngineUI.h"
 
 class Engine
 {
@@ -59,6 +60,9 @@ private:
     void SetupImGui();
     void CleanupImGui();
     void DrawFrame();
+
+    // UI
+    EngineUI ui;
 
     GLFWwindow *window;
     VkInstance instance;

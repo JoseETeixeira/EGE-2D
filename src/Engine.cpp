@@ -92,6 +92,13 @@ bool Engine::Init()
     SetupImGui();
     CreateSyncObjects();
 
+    // Initialize UI
+    if (!ui.Init())
+    {
+        std::cerr << "Failed to initialize UI" << std::endl;
+        return false;
+    }
+
     return true;
 }
 
@@ -641,10 +648,8 @@ void Engine::DrawFrame()
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 
-    // Custom UI overlay
-    ImGui::Begin("Overlay");
-    ImGui::Text("Hello, ImGui!");
-    ImGui::End();
+    // Render the engine UI
+    ui.Render();
 
     ImGui::Render();
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffers[imageIndex]);
