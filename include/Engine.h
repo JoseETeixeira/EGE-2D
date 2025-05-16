@@ -3,6 +3,10 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <vector>
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <condition_variable>
 
 class Engine
 {
@@ -13,8 +17,14 @@ public:
     void Run();
 
 private:
+    // Thread functions
     void MainLoop();
+    void RenderLoop();
     void Cleanup();
+
+    // Thread control
+    void StartThreads();
+    void StopThreads();
 
     // Vulkan setup methods
     void CreateSurface();
@@ -33,7 +43,17 @@ private:
     void CleanupSwapChain();
     void RecreateSwapChain();
 
-    bool framebufferResized = false;
+    // Thread synchronization
+    std::atomic<bool> isRunning{false};
+    std::atomic<bool> framebufferResized{false};
+    std::mutex renderMutex;
+    std::condition_variable renderCV;
+    std::atomic<bool> frameReady{false};
+    std::atomic<bool> frameRendered{false};
+
+    // Threads
+    std::thread mainThread;
+    std::thread renderThread;
 
     // ImGui setup and rendering
     void SetupImGui();

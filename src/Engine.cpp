@@ -7,9 +7,27 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_vulkan.h"
 
-Engine::Engine() : window(nullptr), instance(VK_NULL_HANDLE) {}
+Engine::Engine() : window(nullptr), instance(VK_NULL_HANDLE),
+                   isRunning(false), framebufferResized(false),
+                   frameReady(false), frameRendered(false) {}
 
-Engine::~Engine() {}
+Engine::~Engine()
+{
+    // Make sure threads are stopped
+    if (isRunning)
+    {
+        StopThreads();
+
+        if (mainThread.joinable())
+        {
+            mainThread.join();
+        }
+        if (renderThread.joinable())
+        {
+            renderThread.join();
+        }
+    }
+}
 
 bool Engine::Init()
 {
@@ -29,7 +47,7 @@ bool Engine::Init()
     glfwSetFramebufferSizeCallback(window, [](GLFWwindow *w, int width, int height)
                                    {
         auto engine = reinterpret_cast<Engine*>(glfwGetWindowUserPointer(w));
-        engine->framebufferResized = true; });
+        engine->framebufferResized.store(true); });
     if (!window)
     {
         std::cerr << "Failed to create GLFW window" << std::endl;
@@ -79,12 +97,65 @@ bool Engine::Init()
 
 void Engine::MainLoop()
 {
-    while (!glfwWindowShouldClose(window))
+    while (isRunning && !glfwWindowShouldClose(window))
     {
+        // Process window events
         glfwPollEvents();
-        DrawFrame();
+
+        // Check if window should close
+        if (glfwWindowShouldClose(window))
+        {
+            StopThreads();
+            break;
+        }
+
+        // Signal render thread that a new frame is ready to be processed
+        {
+            std::lock_guard<std::mutex> lock(renderMutex);
+            frameReady = true;
+            frameRendered = false;
+        }
+        renderCV.notify_one();
+
+        // Wait for frame to be rendered before continuing
+        // This prevents the main thread from running too far ahead
+        while (!frameRendered && isRunning)
+        {
+            std::this_thread::yield();
+        }
     }
+
+    // Signal render thread to stop
+    StopThreads();
     vkDeviceWaitIdle(device);
+}
+
+void Engine::RenderLoop()
+{
+    while (isRunning)
+    {
+        // Wait for main thread to signal a new frame is ready
+        {
+            std::unique_lock<std::mutex> lock(renderMutex);
+            renderCV.wait(lock, [this]()
+                          { return frameReady || !isRunning; });
+
+            // Exit if engine is shutting down
+            if (!isRunning)
+            {
+                break;
+            }
+
+            // Reset flag
+            frameReady = false;
+        }
+
+        // Render the frame
+        DrawFrame();
+
+        // Signal main thread that frame has been rendered
+        frameRendered = true;
+    }
 }
 
 void Engine::Cleanup()
@@ -147,8 +218,42 @@ void Engine::Cleanup()
 
 void Engine::Run()
 {
-    MainLoop();
+    StartThreads();
+
+    // Wait for threads to finish
+    if (mainThread.joinable())
+    {
+        mainThread.join();
+    }
+    if (renderThread.joinable())
+    {
+        renderThread.join();
+    }
+
     Cleanup();
+}
+
+void Engine::StartThreads()
+{
+    isRunning = true;
+
+    // Start main thread
+    mainThread = std::thread(&Engine::MainLoop, this);
+
+    // Start render thread
+    renderThread = std::thread(&Engine::RenderLoop, this);
+}
+
+void Engine::StopThreads()
+{
+    isRunning = false;
+
+    // Notify render thread to wake up and check isRunning
+    {
+        std::lock_guard<std::mutex> lock(renderMutex);
+        frameReady = true;
+    }
+    renderCV.notify_one();
 }
 // Vulkan and ImGui setup methods
 void Engine::CreateSurface()
@@ -499,16 +604,16 @@ void Engine::CleanupImGui()
 
 void Engine::DrawFrame()
 {
-    if (framebufferResized)
+    if (framebufferResized.load())
     {
-        framebufferResized = false;
+        framebufferResized.store(false);
         RecreateSwapChain();
     }
     uint32_t imageIndex;
     VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex);
-    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized)
+    if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized.load())
     {
-        framebufferResized = false;
+        framebufferResized.store(false);
         RecreateSwapChain();
         return;
     }
@@ -573,9 +678,9 @@ void Engine::DrawFrame()
     presentInfo.pSwapchains = &swapChain;
     presentInfo.pImageIndices = &imageIndex;
     VkResult presentResult = vkQueuePresentKHR(presentQueue, &presentInfo);
-    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || framebufferResized)
+    if (presentResult == VK_ERROR_OUT_OF_DATE_KHR || presentResult == VK_SUBOPTIMAL_KHR || framebufferResized.load())
     {
-        framebufferResized = false;
+        framebufferResized.store(false);
         RecreateSwapChain();
     }
     else if (presentResult != VK_SUCCESS)
